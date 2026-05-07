@@ -1,47 +1,19 @@
-#include <avr/io.h>
-#include <avr/interrupt.h>
-#include <util/delay.h>
-
-#define LED1 9
-#define LED2 10
-#define Button1 2
-#define Button2 3
-#define piezo 8
-#define neoPixel 4
-#define JoystickX A6
-#define JoystickY A7
-
-volatile bool iState = LOW;
-
 void setup() {
-  // put your setup code here, to run once:
-  pinMode(LED1, OUTPUT);
-  pinMode(LED2, OUTPUT);
-  pinMode(Button1, INPUT);
-  pinMode(Button2, INPUT);
-  pinMode(JoystickX, INPUT);
-  pinMode(JoystickY, INPUT);
-  pinMode(piezo, OUTPUT);
-  Serial.begin(9600);
-  
-  cli(); // Turn off interrupts while setting up registers
-  // EICRA: configure pins 2 & 3 for logical change, rising or falling edge activation
-  EICRA |= (1 << ISC01);
-  EICRA &= ~(1 << ISC00);
-
-  // Enable interrupt for pin 2
-  EIMSK |= (1 << INT0);
-
-  sei(); // Turn on interrupts again
+  DDRB |= (1 << DDB1) | (1 << DDB2); // Set LEDs as output
+  SREG = (0 << 7); // Turn off interrupts while setting up registers
+  SMCR |= 1; // Set to idle mode to wait for interrupts
+  EICRA |= (1 << ISC01) | (1 << ISC00) | (1 << ISC11) | (1 << ISC10); // Set button pins' interrupts for rising edge
+  EIMSK |= (1 << INT0) | (1 << INT1); // Enable interrupt for PD2 & PD3 (button pins)
+  SREG = (1 << 7); // Turn on interrupts again
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-  digitalWrite(LED1, iState);
-
-}
+void loop() {}
 
 // ISR
 ISR(INT0_vect) {
-  iState = !iState;
+  PORTB ^= (1 << DDB1);
+}
+
+ISR(INT1_vect) {
+  PORTB ^= (1 << DDB2);
 }
